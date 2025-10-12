@@ -1,11 +1,14 @@
 """
-BitPacking Implementation for Data Compression
-Author: [Your Name]
+Implémentation des algorithmes de compression BitPacking pour tableaux d'entiers
+Author: BEN SALAH Mohamed Dhia
 
-This module implements bit packing compression for integer arrays with two variants:
-1. Simple bit packing (allows splitting across consecutive integers)
-2. Aligned bit packing (no splitting across consecutive integers)
-3. Overflow bit packing (handles outliers efficiently)
+Ce module implémente la compression bit packing pour les tableaux d'entiers avec trois variantes:
+1. Simple bit packing (permet le découpage sur plusieurs entiers consécutifs)
+2. Aligned bit packing (pas de découpage sur plusieurs entiers consécutifs)
+3. Overflow bit packing (gère les outliers efficacement dans une zone séparée)
+
+Chaque algorithme compresse les données en utilisant le nombre minimum de bits nécessaire
+pour représenter chaque valeur, réduisant ainsi la taille de transmission.
 """
 
 import time
@@ -15,46 +18,94 @@ from typing import List, Tuple, Optional
 
 
 class BitPackingBase(ABC):
-    """Abstract base class for bit packing implementations"""
+    """Classe de base abstraite pour toutes les implémentations de bit packing"""
 
     def __init__(self):
-        self.compressed_data: List[int] = []
-        self.original_length: int = 0
-        self.bits_per_element: int = 0
+        """Initialise les attributs communs à tous les compresseurs"""
+        self.compressed_data: List[int] = []  # Données compressées
+        self.original_length: int = 0  # Longueur du tableau original
+        self.bits_per_element: int = 0  # Nombre de bits par élément
 
     @abstractmethod
     def compress(self, array: List[int]) -> List[int]:
-        """Compress an array of integers"""
+        """
+        Compresse un tableau d'entiers.
+
+        Args:
+            array: Tableau d'entiers à compresser
+
+        Returns:
+            List[int]: Tableau compressé
+        """
         pass
 
     @abstractmethod
     def decompress(self, compressed_array: List[int]) -> List[int]:
-        """Decompress and return the original array"""
+        """
+        Décompresse et retourne le tableau original.
+
+        Args:
+            compressed_array: Tableau compressé
+
+        Returns:
+            List[int]: Tableau décompressé original
+        """
         pass
 
     @abstractmethod
     def get(self, index: int) -> int:
-        """Get the value at index i from compressed array"""
+        """
+        Obtient la valeur à l'index i depuis le tableau compressé.
+        Permet un accès direct sans décompression complète.
+
+        Args:
+            index: Index de l'élément à récupérer
+
+        Returns:
+            int: Valeur à l'index spécifié
+
+        Raises:
+            IndexError: Si l'index est hors limites
+        """
         pass
 
     def _calculate_bits_needed(self, array: List[int]) -> int:
-        """Calculate minimum bits needed to represent all values"""
+        """
+        Calcule le nombre minimum de bits nécessaires pour représenter toutes les valeurs.
+
+        Args:
+            array: Tableau d'entiers à analyser
+
+        Returns:
+            int: Nombre de bits minimum nécessaires
+        """
         if not array:
             return 0
         max_val = max(array)
+        # bit_length() retourne le nombre de bits nécessaires pour représenter le nombre
         return max_val.bit_length() if max_val > 0 else 1
 
 
 class SimpleBitPacking(BitPackingBase):
     """
-    Simple bit packing that allows compressed integers to span across
-    consecutive integers in the output array.
+    Bit packing simple qui permet aux entiers compressés de s'étendre sur
+    plusieurs entiers consécutifs dans le tableau de sortie.
+
+    Exemple: Si on compresse avec 12 bits par élément, le 3ème élément peut
+    s'étendre sur les bits 25-32 du premier entier ET les bits 1-4 du second.
+    C'est le plus efficace en termes d'espace.
     """
 
     def compress(self, array: List[int]) -> List[int]:
         """
-        Compress array using simple bit packing.
-        Compressed integers can span across consecutive output integers.
+        Compresse le tableau en utilisant le bit packing simple.
+        Les entiers compressés peuvent s'étendre sur plusieurs entiers de sortie consécutifs.
+
+        Args:
+            array: Tableau d'entiers positifs à compresser
+
+        Returns:
+            List[int]: Tableau compressé avec utilisation optimale de l'espace
         """
         if not array:
             return []
@@ -62,15 +113,15 @@ class SimpleBitPacking(BitPackingBase):
         self.original_length = len(array)
         self.bits_per_element = self._calculate_bits_needed(array)
 
-        # Calculate total bits needed
+        # Calculer le nombre total de bits nécessaires
         total_bits = self.original_length * self.bits_per_element
-        # Calculate number of 32-bit integers needed
+        # Calculer le nombre d'entiers 32-bit nécessaires
         num_output_ints = (total_bits + 31) // 32
 
-        # Initialize output array
+        # Initialiser le tableau de sortie avec des zéros
         compressed = [0] * num_output_ints
 
-        # Pack each element
+        # Empaqueter chaque élément dans le tableau compressé
         for i, value in enumerate(array):
             start_bit = i * self.bits_per_element
             self._write_bits(compressed, start_bit, self.bits_per_element, value)
@@ -79,7 +130,15 @@ class SimpleBitPacking(BitPackingBase):
         return compressed
 
     def decompress(self, compressed_array: List[int]) -> List[int]:
-        """Decompress the array"""
+        """
+        Décompresse le tableau en extrayant chaque valeur.
+
+        Args:
+            compressed_array: Tableau compressé à décompresser
+
+        Returns:
+            List[int]: Tableau original reconstitué
+        """
         if not compressed_array:
             return []
 
@@ -92,65 +151,99 @@ class SimpleBitPacking(BitPackingBase):
         return result
 
     def get(self, index: int) -> int:
-        """Get value at index from compressed data"""
+        """
+        Accès direct à un élément sans décompression complète.
+
+        Args:
+            index: Index de l'élément (0-based)
+
+        Returns:
+            int: Valeur à cet index
+
+        Raises:
+            IndexError: Si index est hors limites
+        """
         if index < 0 or index >= self.original_length:
-            raise IndexError("Index out of range")
+            raise IndexError("Index hors limites")
 
         start_bit = index * self.bits_per_element
         return self._read_bits(self.compressed_data, start_bit, self.bits_per_element)
 
     def _write_bits(self, array: List[int], start_bit: int, num_bits: int, value: int):
-        """Write bits to the array starting at start_bit"""
+        """
+        Écrit des bits dans le tableau en commençant à start_bit.
+        Peut s'étendre sur deux entiers consécutifs si nécessaire.
+
+        Args:
+            array: Tableau où écrire
+            start_bit: Position du bit de départ (0-based)
+            num_bits: Nombre de bits à écrire
+            value: Valeur à écrire
+        """
         if num_bits == 0:
             return
 
+        # Créer un masque pour garantir que la valeur tient dans num_bits
         mask = (1 << num_bits) - 1
-        value &= mask  # Ensure value fits in num_bits
+        value &= mask  # Appliquer le masque
 
+        # Calculer dans quel entier 32-bit on écrit et à quel offset
         int_index = start_bit // 32
         bit_offset = start_bit % 32
 
-        # If the value fits entirely in one integer
+        # Si la valeur tient entièrement dans un seul entier
         if bit_offset + num_bits <= 32:
             array[int_index] |= (value << bit_offset)
         else:
-            # Split across two integers
-            bits_in_first = 32 - bit_offset
-            bits_in_second = num_bits - bits_in_first
+            # Cas où on doit découper la valeur sur deux entiers
+            bits_in_first = 32 - bit_offset  # Bits qu'on peut mettre dans le premier
+            bits_in_second = num_bits - bits_in_first  # Reste à mettre dans le second
 
-            # Write first part
+            # Écrire la première partie (bits de poids faible)
             first_mask = (1 << bits_in_first) - 1
             array[int_index] |= ((value & first_mask) << bit_offset)
 
-            # Write second part
+            # Écrire la seconde partie (bits de poids fort) si possible
             if int_index + 1 < len(array):
                 array[int_index + 1] |= (value >> bits_in_first)
 
     def _read_bits(self, array: List[int], start_bit: int, num_bits: int) -> int:
-        """Read bits from the array starting at start_bit"""
+        """
+        Lit des bits depuis le tableau en commençant à start_bit.
+        Peut lire depuis deux entiers consécutifs si nécessaire.
+
+        Args:
+            array: Tableau depuis lequel lire
+            start_bit: Position du bit de départ (0-based)
+            num_bits: Nombre de bits à lire
+
+        Returns:
+            int: Valeur lue
+        """
         if num_bits == 0:
             return 0
 
+        # Calculer l'index de l'entier et l'offset du bit
         int_index = start_bit // 32
         bit_offset = start_bit % 32
 
         if int_index >= len(array):
             return 0
 
-        # If the value is entirely in one integer
+        # Si la valeur est entièrement dans un seul entier
         if bit_offset + num_bits <= 32:
             mask = (1 << num_bits) - 1
             return (array[int_index] >> bit_offset) & mask
         else:
-            # Split across two integers
+            # Cas où la valeur est découpée sur deux entiers
             bits_in_first = 32 - bit_offset
             bits_in_second = num_bits - bits_in_first
 
-            # Read first part
+            # Lire la première partie
             first_mask = (1 << bits_in_first) - 1
             first_part = (array[int_index] >> bit_offset) & first_mask
 
-            # Read second part
+            # Lire la seconde partie si possible
             if int_index + 1 < len(array):
                 second_mask = (1 << bits_in_second) - 1
                 second_part = array[int_index + 1] & second_mask
@@ -161,14 +254,24 @@ class SimpleBitPacking(BitPackingBase):
 
 class AlignedBitPacking(BitPackingBase):
     """
-    Aligned bit packing that ensures compressed integers don't span
-    across consecutive integers in the output array.
+    Bit packing aligné qui garantit que les entiers compressés ne s'étendent
+    jamais sur plusieurs entiers consécutifs dans le tableau de sortie.
+
+    Exemple: Si on compresse avec 12 bits par élément, on peut mettre 2 éléments
+    (24 bits) dans un entier 32-bit, et le 3ème élément commence au début du
+    prochain entier. C'est plus simple et rapide mais peut gaspiller de l'espace.
     """
 
     def compress(self, array: List[int]) -> List[int]:
         """
-        Compress array using aligned bit packing.
-        Compressed integers never span across consecutive output integers.
+        Compresse le tableau en utilisant le bit packing aligné.
+        Les entiers compressés ne s'étendent jamais sur plusieurs entiers de sortie.
+
+        Args:
+            array: Tableau d'entiers positifs à compresser
+
+        Returns:
+            List[int]: Tableau compressé avec alignement
         """
         if not array:
             return []
@@ -176,20 +279,20 @@ class AlignedBitPacking(BitPackingBase):
         self.original_length = len(array)
         self.bits_per_element = self._calculate_bits_needed(array)
 
-        # Calculate how many elements fit in one 32-bit integer
+        # Calculer combien d'éléments peuvent tenir dans un entier 32-bit
         elements_per_int = 32 // self.bits_per_element if self.bits_per_element > 0 else 32
 
-        # Calculate number of output integers needed
+        # Calculer le nombre d'entiers de sortie nécessaires
         num_output_ints = (self.original_length + elements_per_int - 1) // elements_per_int
 
-        # Initialize output array
+        # Initialiser le tableau de sortie
         compressed = [0] * num_output_ints
 
-        # Pack elements
+        # Empaqueter les éléments sans chevauchement
         for i, value in enumerate(array):
-            output_index = i // elements_per_int
-            element_index = i % elements_per_int
-            bit_offset = element_index * self.bits_per_element
+            output_index = i // elements_per_int  # Dans quel entier on écrit
+            element_index = i % elements_per_int  # Position dans cet entier
+            bit_offset = element_index * self.bits_per_element  # Offset en bits
 
             compressed[output_index] |= (value << bit_offset)
 
@@ -197,7 +300,15 @@ class AlignedBitPacking(BitPackingBase):
         return compressed
 
     def decompress(self, compressed_array: List[int]) -> List[int]:
-        """Decompress the array"""
+        """
+        Décompresse le tableau aligné.
+
+        Args:
+            compressed_array: Tableau compressé à décompresser
+
+        Returns:
+            List[int]: Tableau original reconstitué
+        """
         if not compressed_array:
             return []
 
@@ -219,9 +330,21 @@ class AlignedBitPacking(BitPackingBase):
         return result
 
     def get(self, index: int) -> int:
-        """Get value at index from compressed data"""
+        """
+        Accès direct à un élément sans décompression complète.
+        Plus rapide que SimpleBitPacking car pas de chevauchement.
+
+        Args:
+            index: Index de l'élément (0-based)
+
+        Returns:
+            int: Valeur à cet index
+
+        Raises:
+            IndexError: Si index est hors limites
+        """
         if index < 0 or index >= self.original_length:
-            raise IndexError("Index out of range")
+            raise IndexError("Index hors limites")
 
         elements_per_int = 32 // self.bits_per_element if self.bits_per_element > 0 else 32
         output_index = index // elements_per_int
@@ -237,49 +360,64 @@ class AlignedBitPacking(BitPackingBase):
 
 class OverflowBitPacking(BitPackingBase):
     """
-    Bit packing with overflow area for handling outliers efficiently.
-    Uses a special value to indicate that the actual value is in overflow area.
+    Bit packing avec zone de débordement pour gérer efficacement les outliers.
+
+    Utilise une valeur spéciale pour indiquer que la valeur réelle est stockée
+    dans une zone de débordement séparée. Optimal quand on a beaucoup de petites
+    valeurs et quelques très grandes valeurs (outliers).
+
+    Exemple: [1, 2, 3, 1024, 4, 5] → encode 1,2,3,4,5 avec 3 bits + 1 bit overflow,
+    et stocke 1024 dans une zone séparée avec une référence.
     """
 
     def __init__(self):
+        """Initialise le compresseur avec overflow"""
         super().__init__()
-        self.overflow_data: List[int] = []
-        self.overflow_bits: int = 0
-        self.main_bits: int = 0
-        self.has_overflow_bit: bool = False
-        self.threshold_value: int = 0
+        self.overflow_data: List[int] = []  # Zone de débordement pour les outliers
+        self.overflow_bits: int = 0  # Bits pour indexer dans overflow
+        self.main_bits: int = 0  # Bits pour les valeurs normales
+        self.has_overflow_bit: bool = False  # Si on utilise un bit d'overflow
+        self.threshold_value: int = 0  # Seuil pour décider si une valeur va en overflow
 
     def compress(self, array: List[int]) -> List[int]:
         """
-        Compress array using overflow bit packing.
-        Outliers are stored in a separate overflow area.
+        Compresse le tableau en utilisant le bit packing avec overflow.
+        Les outliers sont stockés dans une zone de débordement séparée.
+
+        Args:
+            array: Tableau d'entiers positifs à compresser
+
+        Returns:
+            List[int]: Tableau compressé suivi de la zone d'overflow
         """
         if not array:
             return []
 
         self.original_length = len(array)
 
-        # Analyze the data to determine optimal bit allocation
+        # Analyser les données pour déterminer la stratégie d'overflow optimale
         self._analyze_overflow_strategy(array)
 
-        # Separate main values and overflow values
+        # Séparer les valeurs normales et les valeurs overflow
         main_values = []
         self.overflow_data = []
-        overflow_map = {}
+        overflow_map = {}  # Mapping valeur -> index dans overflow
 
         for value in array:
             if self._needs_overflow(value):
+                # Cette valeur doit aller en overflow
                 if value not in overflow_map:
+                    # Nouvelle valeur overflow, l'ajouter
                     overflow_map[value] = len(self.overflow_data)
                     self.overflow_data.append(value)
-                # Use overflow indicator + position
+                # Encoder avec le bit d'overflow + position dans overflow
                 encoded_value = (1 << self.main_bits) | overflow_map[value]
                 main_values.append(encoded_value)
             else:
-                # Direct encoding
+                # Encodage direct
                 main_values.append(value)
 
-        # Compress main values using simple bit packing
+        # Compresser les valeurs principales en utilisant simple bit packing
         total_bits_per_element = self.main_bits + (1 if self.has_overflow_bit else 0)
         total_bits = len(main_values) * total_bits_per_element
         num_output_ints = (total_bits + 31) // 32
@@ -290,14 +428,21 @@ class OverflowBitPacking(BitPackingBase):
             start_bit = i * total_bits_per_element
             self._write_bits(compressed, start_bit, total_bits_per_element, value)
 
-        # Append overflow data
+        # Ajouter les données overflow à la fin
         compressed.extend(self.overflow_data)
 
         self.compressed_data = compressed
         return compressed
 
     def _analyze_overflow_strategy(self, array: List[int]):
-        """Analyze values to determine optimal overflow strategy"""
+        """
+        Analyse les valeurs pour déterminer la stratégie d'overflow optimale.
+        Décide combien de bits utiliser pour les valeurs normales et si on
+        doit utiliser une zone d'overflow.
+
+        Args:
+            array: Tableau à analyser
+        """
         if not array:
             self.has_overflow_bit = False
             self.main_bits = 1
@@ -308,40 +453,58 @@ class OverflowBitPacking(BitPackingBase):
         sorted_values = sorted(set(array))
 
         if len(sorted_values) <= 1:
-            # Simple case: all values are the same or empty
+            # Cas simple: toutes les valeurs sont identiques
             self.has_overflow_bit = False
             self.main_bits = self._calculate_bits_needed(array)
             self.overflow_bits = 0
             self.threshold_value = max(array) if array else 0
             return
 
-        # For simplicity, use a threshold-based approach
-        # Values requiring more than 75% of max bits go to overflow
+        # Stratégie basée sur un seuil
+        # Les valeurs nécessitant plus de 60% des bits max vont en overflow
         max_bits = max(sorted_values).bit_length()
         threshold_bits = max(3, int(max_bits * 0.6))
         self.threshold_value = (1 << threshold_bits) - 1
 
         overflow_values = [v for v in sorted_values if v > self.threshold_value]
 
+        # Utiliser overflow seulement si < 30% des valeurs uniques sont des outliers
         if len(overflow_values) > 0 and len(overflow_values) < len(sorted_values) * 0.3:
             self.has_overflow_bit = True
             self.main_bits = threshold_bits
             self.overflow_bits = math.ceil(math.log2(len(overflow_values) + 1)) if len(overflow_values) > 1 else 1
         else:
+            # Pas assez d'outliers pour justifier l'overflow
             self.has_overflow_bit = False
             self.main_bits = max_bits
             self.overflow_bits = 0
 
     def _needs_overflow(self, value: int) -> bool:
-        """Check if value needs to go to overflow area"""
+        """
+        Vérifie si une valeur doit aller dans la zone d'overflow.
+
+        Args:
+            value: Valeur à vérifier
+
+        Returns:
+            bool: True si la valeur dépasse le seuil
+        """
         return self.has_overflow_bit and value > self.threshold_value
 
     def decompress(self, compressed_array: List[int]) -> List[int]:
-        """Decompress the array"""
+        """
+        Décompresse le tableau avec gestion de l'overflow.
+
+        Args:
+            compressed_array: Tableau compressé incluant la zone d'overflow
+
+        Returns:
+            List[int]: Tableau original reconstitué
+        """
         if not compressed_array:
             return []
 
-        # Split compressed data and overflow data
+        # Séparer les données compressées et les données overflow
         total_bits_per_element = self.main_bits + (1 if self.has_overflow_bit else 0)
         total_bits = self.original_length * total_bits_per_element
         num_main_ints = (total_bits + 31) // 32
@@ -358,7 +521,7 @@ class OverflowBitPacking(BitPackingBase):
             encoded_value = self._read_bits(main_compressed, start_bit, total_bits_per_element)
 
             if self.has_overflow_bit and (encoded_value & overflow_mask):
-                # This is an overflow reference
+                # Ceci est une référence overflow
                 overflow_index = encoded_value & value_mask
                 if overflow_index < len(overflow_data):
                     actual_value = overflow_data[overflow_index]
@@ -366,15 +529,26 @@ class OverflowBitPacking(BitPackingBase):
                 else:
                     result.append(0)
             else:
-                # Direct value
+                # Valeur directe
                 result.append(encoded_value & value_mask)
 
         return result
 
     def get(self, index: int) -> int:
-        """Get value at index from compressed data"""
+        """
+        Accès direct à un élément avec gestion de l'overflow.
+
+        Args:
+            index: Index de l'élément (0-based)
+
+        Returns:
+            int: Valeur à cet index
+
+        Raises:
+            IndexError: Si index est négatif ou >= longueur originale
+        """
         if index < 0 or index >= self.original_length:
-            raise IndexError("Index out of range")
+            raise IndexError("Index hors limites")
 
         total_bits_per_element = self.main_bits + (1 if self.has_overflow_bit else 0)
         total_bits = self.original_length * total_bits_per_element
@@ -387,7 +561,7 @@ class OverflowBitPacking(BitPackingBase):
         value_mask = (1 << self.main_bits) - 1
 
         if self.has_overflow_bit and (encoded_value & overflow_mask):
-            # This is an overflow reference
+            # Référence overflow - récupérer depuis la zone overflow
             overflow_index = encoded_value & value_mask
             overflow_start = num_main_ints
             if overflow_start + overflow_index < len(self.compressed_data):
@@ -395,11 +569,11 @@ class OverflowBitPacking(BitPackingBase):
             else:
                 return 0
         else:
-            # Direct value
+            # Valeur directe
             return encoded_value & value_mask
 
     def _write_bits(self, array: List[int], start_bit: int, num_bits: int, value: int):
-        """Write bits to the array starting at start_bit"""
+        """Écrit des bits - implémentation identique à SimpleBitPacking"""
         if num_bits == 0:
             return
 
@@ -422,7 +596,7 @@ class OverflowBitPacking(BitPackingBase):
                 array[int_index + 1] |= (value >> bits_in_first)
 
     def _read_bits(self, array: List[int], start_bit: int, num_bits: int) -> int:
-        """Read bits from the array starting at start_bit"""
+        """Lit des bits - implémentation identique à SimpleBitPacking"""
         if num_bits == 0:
             return 0
 

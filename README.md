@@ -4,6 +4,8 @@
 
 Ce projet implémente différents algorithmes de compression de données par "bit packing" pour accélérer la transmission d'entiers. L'objectif est de compresser des tableaux d'entiers en utilisant moins de bits par élément, tout en conservant un accès direct aux éléments.
 
+**🆕 NOUVEAU : Interface graphique PyQt5 pour interaction intuitive !**
+
 ## Algorithmes Implémentés
 
 ### 1. Simple Bit Packing
@@ -29,16 +31,43 @@ PythonProject/
 ├── bit_packing.py    # Implémentation des algorithmes de compression
 ├── factory.py        # Factory pattern pour créer les compresseurs
 ├── benchmark.py      # Suite de benchmarks et mesures de performance
-└── README.md         # Ce fichier
+├── gui_interface.py  # 🆕 Interface graphique PyQt5
+├── tests.py          # Tests unitaires complets
+├── requirements.txt  # 🆕 Dépendances Python (PyQt5)
+├── README.md         # Ce fichier
+└── rapport.md        # Rapport technique détaillé
 ```
 
 ## Installation et Utilisation
 
 ### Prérequis
 - Python 3.7+
-- Aucune dépendance externe requise
 
-### Utilisation Basique
+### Installation
+
+1. **Cloner le projet** :
+   ```bash
+   git clone <url-du-repository>
+   cd PythonProject_SoftwareEngineering
+   ```
+
+2. **Créer un environnement virtuel** :
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
+
+   # Linux/Mac
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Installer les dépendances** :
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Utilisation Basique (Ligne de Commande)
 
 1. **Démonstration des algorithmes** :
    ```bash
@@ -65,6 +94,37 @@ PythonProject/
    python main.py --list-algorithms
    ```
 
+### 🆕 Interface Graphique
+
+#### Lancer l'interface graphique :
+```bash
+python main.py --gui
+```
+
+#### Fonctionnalités de l'interface graphique :
+
+**Onglet "Data Input" :**
+- **Saisie manuelle** : Entrer des données directement
+- **Chargement de fichier** : Importer des données depuis un fichier texte
+- **Génération de données** : Créer des jeux de test avec différentes distributions
+- **Aperçu des données** : Visualisation des données chargées
+
+**Onglet "Compression" :**
+- **Sélection d'algorithme** : Choisir entre Simple, Aligned, ou Overflow
+- **Compression interactive** : Compresser les données avec statistiques en temps réel
+- **Test d'accès direct** : Tester l'accès à des éléments spécifiques
+- **Affichage des résultats** : Ratios de compression, temps d'exécution
+
+**Onglet "Benchmark" :**
+- **Benchmarks personnalisés** : Tester les performances sur vos données
+- **Benchmarks par défaut** : Exécuter une suite de tests prédéfinis
+- **Tableau de résultats** : Comparaison visuelle des algorithmes
+
+**Onglet "Results" :**
+- **Historique complet** : Tous les résultats de tests
+- **Sauvegarde** : Exporter les résultats vers un fichier
+- **Effacement** : Nettoyer l'historique
+
 ### Utilisation Programmatique
 
 ```python
@@ -84,9 +144,40 @@ decompressed = compressor.decompress(compressed)
 value_at_index_3 = compressor.get(3)
 ```
 
+## 🆕 Avantages de l'Interface Graphique
+
+### Pour les Utilisateurs :
+- **Interface intuitive** : Pas besoin de connaître les commandes
+- **Visualisation en temps réel** : Voir les résultats immédiatement
+- **Tests interactifs** : Expérimenter facilement avec différents paramètres
+- **Sauvegarde facile** : Exporter les résultats d'un clic
+
+### Pour l'Apprentissage :
+- **Comparaison visuelle** : Voir les différences entre algorithmes
+- **Feedback immédiat** : Comprendre l'impact des paramètres
+- **Génération de données** : Tester différents types de datasets
+- **Historique des tests** : Suivre l'évolution des expériences
+
+### Fonctionnalités Avancées :
+- **Traitement asynchrone** : L'interface reste réactive pendant les calculs
+- **Gestion d'erreurs** : Messages d'erreur clairs et informatifs
+- **Validation d'entrée** : Vérification automatique des données
+- **Threading** : Les opérations longues n'bloquent pas l'interface
+
 ## Exemples d'Utilisation
 
-### Exemple 1 : Compression Simple
+### Exemple 1 : Test Rapide via GUI
+1. Lancer l'interface : `python main.py --gui`
+2. Aller dans "Data Input" → Saisir `1 2 3 4 5 6 7 8`
+3. Aller dans "Compression" → Sélectionner "Simple" → Cliquer "Compress Data"
+4. Voir les résultats instantanément
+
+### Exemple 2 : Génération et Benchmark
+1. Dans "Data Input" → Choisir "with_outliers" → Générer 1000 éléments
+2. Dans "Benchmark" → Cliquer "Run Benchmark"
+3. Observer la comparaison des algorithmes dans le tableau
+
+### Exemple 3 : Compression Programmatique
 ```python
 from factory import create_compressor
 
@@ -102,18 +193,6 @@ print(f"Taille compressée: {len(compressed) * 32} bits")
 print(f"Ratio de compression: {(len(data) * 32) / (len(compressed) * 32):.2f}x")
 ```
 
-### Exemple 2 : Gestion des Valeurs Aberrantes
-```python
-# Données avec des valeurs aberrantes
-data = [1, 2, 3, 1024, 4, 5, 2048, 6]
-
-# Utiliser la compression avec débordement
-compressor = create_compressor("overflow")
-compressed = compressor.compress(data)
-
-# La compression overflow sera plus efficace pour ce type de données
-```
-
 ## Mesures de Performance
 
 Le projet inclut un système de benchmarking complet qui mesure :
@@ -123,6 +202,12 @@ Le projet inclut un système de benchmarking complet qui mesure :
 - **Temps d'accès direct** : Temps pour accéder à un élément via get()
 - **Ratio de compression** : Rapport entre la taille originale et compressée
 - **Seuil de latence** : Latence de transmission où la compression devient avantageuse
+
+### 🆕 Interface Graphique :
+- **Visualisation en temps réel** des métriques
+- **Comparaison graphique** entre algorithmes
+- **Historique des performances** avec timestamps
+- **Export des résultats** pour analyse ultérieure
 
 ### Calcul du Seuil de Transmission
 
@@ -158,6 +243,12 @@ Les différents algorithmes de compression implémentent une interface commune (
 ### Template Method
 Les classes de compression utilisent des méthodes communes (`_read_bits`, `_write_bits`) tout en implémentant leurs spécificités propres.
 
+### 🆕 Observer Pattern (GUI)
+L'interface graphique utilise le pattern Observer via les signaux PyQt5 pour :
+- **Communication asynchrone** entre threads
+- **Mise à jour de l'interface** en temps réel
+- **Gestion d'événements** utilisateur
+
 ## Bonus : Gestion des Nombres Négatifs
 
 ### Problème
@@ -187,6 +278,27 @@ Le projet inclut une validation automatique qui vérifie :
 - L'intégrité de la compression/décompression
 - La cohérence de l'accès direct via get()
 - Les performances relatives des différents algorithmes
+- **🆕 Tests d'interface** : Validation GUI avec threading sécurisé
+
+## 🆕 Installation et Configuration
+
+### Installation des Dépendances :
+```bash
+pip install -r requirements.txt
+```
+
+### Vérification de l'Installation :
+```bash
+python main.py --gui
+```
+
+### En cas de Problème PyQt5 :
+```bash
+# Alternative d'installation
+pip install PyQt5-tools
+# Ou pour Linux
+sudo apt-get install python3-pyqt5
+```
 
 ## Contribution
 
@@ -195,8 +307,9 @@ Le projet est conçu de manière modulaire pour faciliter l'ajout de nouveaux al
 2. Implémenter `compress()`, `decompress()`, et `get()`
 3. Ajouter le nouveau type dans `CompressionType`
 4. Mettre à jour la factory
+5. **🆕 Les nouveaux algorithmes apparaissent automatiquement dans l'interface graphique**
 
 ## Auteur
 
-[Votre Nom]
+BEN SALAH Mohamed Dhia  
 Projet de Software Engineering 2025

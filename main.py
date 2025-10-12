@@ -1,9 +1,10 @@
 """
 Main entry point for the Bit Packing Compression Project
-Author: [Your Name]
+Author: BEN SALAH Mohamed Dhia
 
-This is the main interface for testing and using the bit packing compression algorithms.
-It provides both a command-line interface and programmatic examples.
+Ce module est le point d'entrée principal pour tester et utiliser les algorithmes
+de compression bit packing. Il offre une interface en ligne de commande et une
+interface graphique pour une utilisation interactive.
 """
 
 import sys
@@ -13,50 +14,71 @@ from factory import BitPackingFactory, CompressionType
 from benchmark import BenchmarkSuite, DataGenerator, run_default_benchmarks
 
 
+def start_gui():
+    """Démarre l'interface graphique PyQt5 pour une utilisation interactive"""
+    print("=== DÉMARRAGE DE L'INTERFACE GRAPHIQUE ===")
+    print("Lancement de l'interface graphique pour tester")
+    print("interactivement les algorithmes de compression.")
+    print()
+
+    try:
+        # Import ici pour éviter les problèmes si PyQt5 n'est pas installé
+        import gui_interface
+        gui_interface.main()
+    except ImportError:
+        print("PyQt5 est requis pour lancer l'interface graphique.")
+        print("Installez les dépendances avec: pip install -r requirements.txt")
+    except Exception as e:
+        print(f"Échec du démarrage de l'interface: {e}")
+
+
 def demonstrate_algorithms():
-    """Demonstrate all three compression algorithms with example data"""
+    """
+    Démontre les trois algorithmes de compression avec des exemples.
+    Affiche les ratios de compression et vérifie l'intégrité des données.
+    """
+    print("=== DÉMONSTRATION DES ALGORITHMES DE COMPRESSION BIT PACKING ===\n")
 
-    print("=== BIT PACKING COMPRESSION DEMONSTRATION ===\n")
-
-    # Example data with different characteristics
+    # Exemples de données avec différentes caractéristiques
     examples = {
-        "Small values": [1, 2, 3, 4, 5, 6, 7, 8],
-        "Mixed values": [1, 2, 3, 1024, 4, 5, 2048, 6],
-        "Power of 2": [1, 2, 4, 8, 16, 32, 64, 128]
+        "Petites valeurs": [1, 2, 3, 4, 5, 6, 7, 8],
+        "Valeurs mixtes": [1, 2, 3, 1024, 4, 5, 2048, 6],
+        "Puissances de 2": [1, 2, 4, 8, 16, 32, 64, 128]
     }
 
     for example_name, data in examples.items():
-        print(f"Example: {example_name}")
-        print(f"Original data: {data}")
-        print(f"Data size: {len(data)} integers = {len(data) * 32} bits = {len(data) * 4} bytes\n")
+        print(f"Exemple: {example_name}")
+        print(f"Données originales: {data}")
+        print(f"Taille des données: {len(data)} entiers = {len(data) * 32} bits = {len(data) * 4} octets\n")
 
-        # Test each algorithm
+        # Tester chaque algorithme
         for comp_type in CompressionType:
             compressor = BitPackingFactory.create_compressor(comp_type)
 
-            # Compress
+            # Compresser les données
             compressed = compressor.compress(data.copy())
 
-            # Decompress to verify
+            # Décompresser pour vérifier l'intégrité
             decompressed = compressor.decompress(compressed.copy())
 
-            # Test random access
+            # Tester l'accès aléatoire (méthode get)
             test_index = len(data) // 2
             direct_value = compressor.get(test_index)
 
-            # Calculate compression ratio
+            # Calculer le ratio de compression
             original_size = len(data) * 32
             compressed_size = len(compressed) * 32
             ratio = original_size / compressed_size if compressed_size > 0 else 0
 
             print(f"  {comp_type.value.capitalize()} Compression:")
-            print(f"    Compressed size: {len(compressed)} integers = {compressed_size} bits = {compressed_size // 8} bytes")
-            print(f"    Compression ratio: {ratio:.2f}x")
-            print(f"    Verification: {'✓ PASS' if decompressed == data else '✗ FAIL'}")
-            print(f"    Random access test (index {test_index}): {direct_value} {'✓' if direct_value == data[test_index] else '✗'}")
+            print(f"    Taille compressée: {len(compressed)} entiers = {compressed_size} bits = {compressed_size // 8} octets")
+            print(f"    Ratio de compression: {ratio:.2f}x")
+            print(f"    Vérification: {'✓ SUCCÈS' if decompressed == data else '✗ ÉCHEC'}")
+            print(f"    Test accès aléatoire (index {test_index}): {direct_value} {'✓' if direct_value == data[test_index] else '✗'}")
 
+            # Afficher les valeurs overflow si applicable
             if comp_type == CompressionType.OVERFLOW and hasattr(compressor, 'overflow_data'):
-                print(f"    Overflow values: {compressor.overflow_data}")
+                print(f"    Valeurs en overflow: {compressor.overflow_data}")
 
             print()
 
@@ -64,180 +86,189 @@ def demonstrate_algorithms():
 
 
 def interactive_mode():
-    """Interactive mode for testing custom data"""
-
-    print("=== INTERACTIVE MODE ===")
-    print("Enter integers separated by spaces (or 'quit' to exit):")
+    """
+    Mode interactif pour tester avec des données personnalisées.
+    Permet à l'utilisateur d'entrer des données et de choisir l'algorithme.
+    """
+    print("=== MODE INTERACTIF ===")
+    print("Entrez des entiers séparés par des espaces (ou 'quit' pour quitter):")
 
     while True:
         try:
-            user_input = input("\nData: ").strip()
+            user_input = input("\nDonnées: ").strip()
 
             if user_input.lower() in ['quit', 'exit', 'q']:
                 break
 
-            # Parse input
+            # Analyser l'entrée utilisateur
             data = [int(x) for x in user_input.split()]
 
             if not data:
-                print("Please enter at least one integer.")
+                print("Veuillez entrer au moins un entier.")
                 continue
 
-            print(f"\nTesting with data: {data}")
+            print(f"\nTest avec les données: {data}")
 
-            # Ask for compression type
-            print("Available compression types:")
+            # Demander le type de compression
+            print("Types de compression disponibles:")
             for i, comp_type in enumerate(CompressionType, 1):
                 description = BitPackingFactory.get_description(comp_type)
                 print(f"{i}. {comp_type.value.capitalize()}: {description[:80]}...")
 
-            choice = input("Choose compression type (1-3): ").strip()
+            choice = input("Choisissez le type de compression (1-3): ").strip()
 
             try:
                 comp_types = list(CompressionType)
                 comp_type = comp_types[int(choice) - 1]
             except (ValueError, IndexError):
-                print("Invalid choice. Using Simple compression.")
+                print("Choix invalide. Utilisation de la compression Simple.")
                 comp_type = CompressionType.SIMPLE
 
-            # Test the chosen algorithm
+            # Tester l'algorithme choisi
             compressor = BitPackingFactory.create_compressor(comp_type)
             compressed = compressor.compress(data.copy())
             decompressed = compressor.decompress(compressed.copy())
 
-            print(f"\nResults for {comp_type.value.capitalize()} compression:")
+            print(f"\nRésultats pour la compression {comp_type.value.capitalize()}:")
             print(f"Original: {data}")
-            print(f"Compressed size: {len(compressed)} integers")
-            print(f"Decompressed: {decompressed}")
-            print(f"Verification: {'✓ PASS' if decompressed == data else '✗ FAIL'}")
+            print(f"Taille compressée: {len(compressed)} entiers")
+            print(f"Décompressé: {decompressed}")
+            print(f"Vérification: {'✓ SUCCÈS' if decompressed == data else '✗ ÉCHEC'}")
 
-            # Show compression details
+            # Afficher les détails de compression
             original_bits = len(data) * 32
             compressed_bits = len(compressed) * 32
             ratio = original_bits / compressed_bits if compressed_bits > 0 else 0
-            print(f"Compression ratio: {ratio:.2f}x")
-            print(f"Space saved: {original_bits - compressed_bits} bits ({(original_bits - compressed_bits) / 8:.1f} bytes)")
+            print(f"Ratio de compression: {ratio:.2f}x")
+            print(f"Espace économisé: {original_bits - compressed_bits} bits ({(original_bits - compressed_bits) / 8:.1f} octets)")
 
         except ValueError:
-            print("Please enter valid integers.")
+            print("Veuillez entrer des entiers valides.")
         except KeyboardInterrupt:
             break
 
-    print("\nExiting interactive mode.")
+    print("\nFermeture du mode interactif.")
 
 
 def run_benchmarks():
-    """Run comprehensive benchmarks"""
+    """
+    Exécute des benchmarks complets sur différents types de données.
+    Mesure les performances et génère un rapport détaillé.
+    """
+    print("=== EXÉCUTION DES BENCHMARKS COMPLETS ===")
+    print("Cela peut prendre quelques minutes...\n")
 
-    print("=== RUNNING COMPREHENSIVE BENCHMARKS ===")
-    print("This may take a few minutes...\n")
-
-    # Run benchmarks
+    # Exécuter les benchmarks
     results = run_default_benchmarks()
 
-    # Generate and display report
+    # Générer et afficher le rapport
     benchmark_suite = BenchmarkSuite()
     report = benchmark_suite.generate_report(results)
     print(report)
 
-    # Save to file
+    # Sauvegarder dans un fichier
     with open("benchmark_report.txt", "w", encoding="utf-8") as f:
         f.write(report)
 
-    print("Detailed report saved to 'benchmark_report.txt'")
+    print("Rapport détaillé sauvegardé dans 'benchmark_report.txt'")
 
 
 def run_custom_benchmark():
-    """Run benchmark on custom data"""
-
-    print("=== CUSTOM BENCHMARK ===")
+    """
+    Exécute un benchmark sur des données personnalisées.
+    Permet à l'utilisateur de spécifier la taille et le type de données.
+    """
+    print("=== BENCHMARK PERSONNALISÉ ===")
 
     try:
-        size = int(input("Enter data size: "))
-        max_value = int(input("Enter maximum value: "))
+        size = int(input("Entrez la taille des données: "))
+        max_value = int(input("Entrez la valeur maximale: "))
 
-        print("Data generation options:")
-        print("1. Uniform distribution")
-        print("2. Power law distribution (many small, few large)")
-        print("3. With outliers")
-        print("4. Sequential")
+        print("Options de génération de données:")
+        print("1. Distribution uniforme")
+        print("2. Distribution en loi de puissance (beaucoup de petites, peu de grandes)")
+        print("3. Avec outliers (valeurs aberrantes)")
+        print("4. Séquentielle")
 
-        choice = input("Choose option (1-4): ").strip()
+        choice = input("Choisissez une option (1-4): ").strip()
 
+        # Générer les données selon le choix
         if choice == "1":
             data = DataGenerator.generate_uniform(size, max_value)
-            data_name = f"Uniform({size}, max={max_value})"
+            data_name = f"Uniforme({size}, max={max_value})"
         elif choice == "2":
             data = DataGenerator.generate_power_law(size, max_value)
-            data_name = f"PowerLaw({size}, max={max_value})"
+            data_name = f"LoiPuissance({size}, max={max_value})"
         elif choice == "3":
-            outlier_value = int(input("Enter outlier value: "))
+            outlier_value = int(input("Entrez la valeur aberrante: "))
             data = DataGenerator.generate_with_outliers(size, max_value, outlier_value)
-            data_name = f"WithOutliers({size}, max={max_value}, outlier={outlier_value})"
+            data_name = f"AvecOutliers({size}, max={max_value}, outlier={outlier_value})"
         elif choice == "4":
             data = DataGenerator.generate_sequential(size)
-            data_name = f"Sequential({size})"
+            data_name = f"Séquentielle({size})"
         else:
-            print("Invalid choice. Using uniform distribution.")
+            print("Choix invalide. Utilisation de la distribution uniforme.")
             data = DataGenerator.generate_uniform(size, max_value)
-            data_name = f"Uniform({size}, max={max_value})"
+            data_name = f"Uniforme({size}, max={max_value})"
 
-        print(f"\nGenerated {data_name}")
-        print(f"Sample data: {data[:10]}{'...' if len(data) > 10 else ''}")
+        print(f"\nGénéré {data_name}")
+        print(f"Échantillon de données: {data[:10]}{'...' if len(data) > 10 else ''}")
 
-        # Run benchmark
+        # Exécuter le benchmark
         datasets = {data_name: data}
         benchmark_suite = BenchmarkSuite(num_iterations=20)
         results = benchmark_suite.run_comprehensive_benchmark(datasets)
 
-        # Display results
+        # Afficher les résultats
         report = benchmark_suite.generate_report(results)
         print(report)
 
     except ValueError:
-        print("Invalid input. Please enter valid numbers.")
+        print("Entrée invalide. Veuillez entrer des nombres valides.")
     except KeyboardInterrupt:
-        print("\nBenchmark cancelled.")
+        print("\nBenchmark annulé.")
 
 
 def main():
-    """Main function with command-line interface"""
-
+    """Fonction principale avec interface en ligne de commande"""
     parser = argparse.ArgumentParser(
-        description="Bit Packing Compression - Data Compression for Speed Up Transmission",
-        epilog="Examples:\n"
-               "  python main.py --demo                 # Run demonstration\n"
-               "  python main.py --interactive          # Interactive testing\n"
-               "  python main.py --benchmark            # Run full benchmarks\n"
-               "  python main.py --custom-benchmark     # Custom benchmark\n",
+        description="Bit Packing Compression - Compression de données pour accélérer la transmission",
+        epilog="Exemples:\n"
+               "  python main.py --demo                 # Lancer la démonstration\n"
+               "  python main.py --interactive          # Mode interactif\n"
+               "  python main.py --benchmark            # Benchmarks complets\n"
+               "  python main.py --custom-benchmark     # Benchmark personnalisé\n"
+               "  python main.py --gui                  # Lancer l'interface graphique\n",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
     parser.add_argument("--demo", action="store_true",
-                       help="Run algorithm demonstration")
+                       help="Lancer une démonstration des algorithmes")
     parser.add_argument("--interactive", action="store_true",
-                       help="Start interactive mode")
+                       help="Démarrer le mode interactif")
     parser.add_argument("--benchmark", action="store_true",
-                       help="Run comprehensive benchmarks")
+                       help="Exécuter des benchmarks complets")
     parser.add_argument("--custom-benchmark", action="store_true",
-                       help="Run custom benchmark")
+                       help="Exécuter un benchmark personnalisé")
     parser.add_argument("--list-algorithms", action="store_true",
-                       help="List available compression algorithms")
+                       help="Lister les algorithmes de compression disponibles")
+    parser.add_argument("--gui", action="store_true",
+                       help="Lancer l'interface graphique")
 
     args = parser.parse_args()
 
-    # If no arguments provided, show help and run demo
+    # Si aucun argument fourni, afficher l'aide et lancer la démo
     if len(sys.argv) == 1:
         parser.print_help()
         print("\n" + "="*60)
-        print("Running demonstration since no arguments were provided...")
+        print("Lancement de la démonstration car aucun argument n'a été fourni...")
         print("="*60 + "\n")
         demonstrate_algorithms()
         return
 
-    # Handle arguments
+    # Traiter les arguments
     if args.list_algorithms:
-        print("Available Compression Algorithms:")
+        print("Algorithmes de compression disponibles:")
         for comp_type in CompressionType:
             description = BitPackingFactory.get_description(comp_type)
             print(f"\n{comp_type.value.upper()}:")
@@ -254,6 +285,9 @@ def main():
 
     if args.custom_benchmark:
         run_custom_benchmark()
+
+    if args.gui:
+        start_gui()
 
 
 if __name__ == "__main__":
