@@ -269,9 +269,9 @@ def main():
     # Traiter les arguments
     if args.list_algorithms:
         print("Algorithmes de compression disponibles:")
-        for comp_type in CompressionType:
-            description = BitPackingFactory.get_description(comp_type)
-            print(f"\n{comp_type.value.upper()}:")
+        for compression_type in CompressionType:
+            description = BitPackingFactory.get_description(compression_type)
+            print(f"\n{compression_type.value.upper()}:")
             print(f"  {description}")
 
     if args.demo:

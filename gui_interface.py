@@ -412,9 +412,9 @@ class CompressionWorker(QThread):
 
         self.progress.emit("Testing random access...")
         access_times = []
-        for i in range(min(10, len(self.data))):
+        for access_index in range(min(10, len(self.data))):
             start_time = time.perf_counter()
-            value = compressor.get(i)
+            value = compressor.get(access_index)
             access_time = time.perf_counter() - start_time
             access_times.append(access_time)
 
@@ -444,7 +444,7 @@ class CompressionWorker(QThread):
         self.progress.emit("Running benchmarks...")
 
         results = {}
-        for i, comp_type in enumerate(CompressionType):
+        for algorithm_index, comp_type in enumerate(CompressionType):
             self.progress.emit(f"Testing {comp_type.value} algorithm...")
 
             benchmark_suite = BenchmarkSuite(num_iterations=10)

@@ -122,8 +122,8 @@ class SimpleBitPacking(BitPackingBase):
         compressed = [0] * num_output_ints
 
         # Empaqueter chaque élément dans le tableau compressé
-        for i, value in enumerate(array):
-            start_bit = i * self.bits_per_element
+        for element_index, value in enumerate(array):
+            start_bit = element_index * self.bits_per_element
             self._write_bits(compressed, start_bit, self.bits_per_element, value)
 
         self.compressed_data = compressed
@@ -143,8 +143,8 @@ class SimpleBitPacking(BitPackingBase):
             return []
 
         result = []
-        for i in range(self.original_length):
-            start_bit = i * self.bits_per_element
+        for element_index in range(self.original_length):
+            start_bit = element_index * self.bits_per_element
             value = self._read_bits(compressed_array, start_bit, self.bits_per_element)
             result.append(value)
 

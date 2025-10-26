@@ -23,8 +23,8 @@ class TestBitPackingAlgorithms(unittest.TestCase):
             [0],  # Un seul élément - cas minimal
             [1, 2, 3, 4, 5],  # Petites valeurs uniformes
             [1, 2, 3, 1024, 4, 5, 2048, 6],  # Avec valeurs aberrantes (outliers)
-            [2**i for i in range(10)],  # Puissances de 2 - teste différents nombres de bits
-            [random.randint(0, 1000) for _ in range(100)],  # Données aléatoires réalistes
+            [2**power_index for power_index in range(10)],  # Puissances de 2 - teste différents nombres de bits
+            [random.randint(0, 1000) for test_case_index in range(100)],  # Données aléatoires réalistes
         ]
 
     def test_simple_compression(self):
@@ -42,9 +42,9 @@ class TestBitPackingAlgorithms(unittest.TestCase):
 
                 # Test accès direct - vérifier que get() retourne les bonnes valeurs
                 if test_data:
-                    for i in range(len(test_data)):
-                        self.assertEqual(compressor.get(i), test_data[i],
-                                       f"Échec accès direct à l'index {i}")
+                    for element_index in range(len(test_data)):
+                        self.assertEqual(compressor.get(element_index), test_data[element_index],
+                                       f"Échec accès direct à l'index {element_index}")
 
     def test_aligned_compression(self):
         """Tester la compression alignée (pas de chevauchement entre entiers)"""
@@ -60,8 +60,8 @@ class TestBitPackingAlgorithms(unittest.TestCase):
 
                 # Vérifier l'accès direct élément par élément
                 if test_data:
-                    for i in range(len(test_data)):
-                        self.assertEqual(compressor.get(i), test_data[i])
+                    for element_index in range(len(test_data)):
+                        self.assertEqual(compressor.get(element_index), test_data[element_index])
 
     def test_overflow_compression(self):
         """Tester la compression avec débordement (gère les outliers efficacement)"""
@@ -77,8 +77,8 @@ class TestBitPackingAlgorithms(unittest.TestCase):
 
                 # Vérifier l'accès direct fonctionne même avec la zone de débordement
                 if test_data:
-                    for i in range(len(test_data)):
-                        self.assertEqual(compressor.get(i), test_data[i])
+                    for element_index in range(len(test_data)):
+                        self.assertEqual(compressor.get(element_index), test_data[element_index])
 
     def test_factory_creation(self):
         """Tester la création via factory (Design Pattern Factory)"""

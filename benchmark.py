@@ -43,7 +43,7 @@ class DataGenerator:
         Returns:
             List[int]: Liste d'entiers aléatoires uniformément distribués
         """
-        return [random.randint(0, max_value) for _ in range(size)]
+        return [random.randint(0, max_value) for element_index in range(size)]
 
     @staticmethod
     def generate_power_law(size: int, max_value: int, alpha: float = 2.0) -> List[int]:
@@ -60,10 +60,10 @@ class DataGenerator:
             List[int]: Liste d'entiers suivant une loi de puissance
         """
         data = []
-        for _ in range(size):
+        for iteration_index in range(size):
             # Générer une valeur suivant une loi de puissance
-            u = random.random()
-            value = int((1 - u) ** (-1 / (alpha - 1)) * 10)
+            random_uniform = random.random()
+            value = int((1 - random_uniform) ** (-1 / (alpha - 1)) * 10)
             value = min(value, max_value)  # Limiter à max_value
             data.append(value)
         return data
@@ -87,8 +87,8 @@ class DataGenerator:
         num_outliers = int(size * outlier_ratio)
 
         # Générer les outliers et les valeurs normales
-        for i in range(size):
-            if i < num_outliers:
+        for element_index in range(size):
+            if element_index < num_outliers:
                 data.append(outlier_value)
             else:
                 data.append(random.randint(0, normal_max))
@@ -144,7 +144,7 @@ class BenchmarkSuite:
         """
         # Mesurer le temps de compression sur plusieurs itérations
         compression_times = []
-        for _ in range(self.num_iterations):
+        for iteration_counter in range(self.num_iterations):
             start_time = time.perf_counter()
             compressed = algorithm.compress(data.copy())
             end_time = time.perf_counter()
@@ -155,7 +155,7 @@ class BenchmarkSuite:
 
         # Mesurer le temps de décompression
         decompression_times = []
-        for _ in range(self.num_iterations):
+        for iteration_counter in range(self.num_iterations):
             start_time = time.perf_counter()
             decompressed = algorithm.decompress(compressed.copy())
             end_time = time.perf_counter()
@@ -164,13 +164,13 @@ class BenchmarkSuite:
         # Mesurer le temps d'accès aléatoire (opération get)
         get_times = []
         # Préparer des indices de test aléatoires
-        test_indices = [random.randint(0, len(data) - 1) for _ in range(min(100, len(data)))]
+        test_indices = [random.randint(0, len(data) - 1) for test_index_counter in range(min(100, len(data)))]
 
         # Mesurer avec moins d'itérations car get() est rapide
-        for _ in range(self.num_iterations // 10):
+        for iteration_counter in range(self.num_iterations // 10):
             start_time = time.perf_counter()
-            for idx in test_indices:
-                _ = algorithm.get(idx)
+            for test_index in test_indices:
+                _ = algorithm.get(test_index)
             end_time = time.perf_counter()
             # Diviser par le nombre d'accès pour obtenir le temps moyen par accès
             get_times.append((end_time - start_time) / len(test_indices))
@@ -276,9 +276,15 @@ class BenchmarkSuite:
             report.append(f"Dataset: {dataset_name}")
             report.append("-" * 50)
 
+            # Fonction helper pour extraire le ratio de compression d'un résultat
+            def extract_compression_ratio(result_tuple: Tuple[str, BenchmarkResult]) -> float:
+                """Extrait le ratio de compression d'un tuple (nom, résultat)"""
+                algorithm_name, benchmark_result = result_tuple
+                return benchmark_result.compression_ratio
+
             # Trier les algorithmes par ratio de compression (meilleur d'abord)
             sorted_results = sorted(dataset_results.items(),
-                                  key=lambda x: x[1].compression_ratio,
+                                  key=extract_compression_ratio,
                                   reverse=True)
 
             for algo_name, result in sorted_results:
