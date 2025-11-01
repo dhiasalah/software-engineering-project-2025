@@ -1,0 +1,247 @@
+=== RAPPORT DE BENCHMARK - COMPRESSION BIT PACKING ===
+
+Dataset: Uniforme Petit (1K)
+--------------------------------------------------
+
+Algorithme: Simple
+  Ratio de compression: 3.195x
+  Temps de compression: 0.428 ms
+  Temps de décompression: 0.383 ms
+  Temps d'accès aléatoire: 0.438 μs
+  Taille originale: 4000 octets
+  Taille compressée: 1252 octets
+  Seuil à 1 Mbps: 38.318 ms de latence
+  Seuil à 10 Mbps: 584.887 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Overflow
+  Ratio de compression: 3.195x
+  Temps de compression: 0.557 ms
+  Temps de décompression: 0.399 ms
+  Temps d'accès aléatoire: 1.330 μs
+  Taille originale: 4000 octets
+  Taille compressée: 1252 octets
+  Seuil à 1 Mbps: 45.509 ms de latence
+  Seuil à 10 Mbps: 770.801 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Aligned
+  Ratio de compression: 2.985x
+  Temps de compression: 0.233 ms
+  Temps de décompression: 0.191 ms
+  Temps d'accès aléatoire: 1.115 μs
+  Taille originale: 4000 octets
+  Taille compressée: 1340 octets
+  Seuil à 1 Mbps: 20.308 ms de latence
+  Seuil à 10 Mbps: 248.492 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+======================================================================
+
+Dataset: Uniforme Grand (10K)
+--------------------------------------------------
+
+Algorithme: Simple
+  Ratio de compression: 3.200x
+  Temps de compression: 4.347 ms
+  Temps de décompression: 3.926 ms
+  Temps d'accès aléatoire: 0.405 μs
+  Taille originale: 40000 octets
+  Taille compressée: 12500 octets
+  Seuil à 1 Mbps: 39.078 ms de latence
+  Seuil à 10 Mbps: 602.786 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Overflow
+  Ratio de compression: 3.200x
+  Temps de compression: 5.342 ms
+  Temps de décompression: 3.964 ms
+  Temps d'accès aléatoire: 6.456 μs
+  Taille originale: 40000 octets
+  Taille compressée: 12500 octets
+  Seuil à 1 Mbps: 44.166 ms de latence
+  Seuil à 10 Mbps: 733.030 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Aligned
+  Ratio de compression: 2.999x
+  Temps de compression: 2.467 ms
+  Temps de décompression: 1.916 ms
+  Temps d'accès aléatoire: 6.137 μs
+  Taille originale: 40000 octets
+  Taille compressée: 13340 octets
+  Seuil à 1 Mbps: 20.985 ms de latence
+  Seuil à 10 Mbps: 258.718 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+======================================================================
+
+Dataset: Loi de Puissance
+--------------------------------------------------
+
+Algorithme: Simple
+  Ratio de compression: 2.285x
+  Temps de compression: 2.131 ms
+  Temps de décompression: 1.916 ms
+  Temps d'accès aléatoire: 0.397 μs
+  Taille originale: 20000 octets
+  Taille compressée: 8752 octets
+  Seuil à 1 Mbps: 47.095 ms de latence
+  Seuil à 10 Mbps: 817.412 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Overflow
+  Ratio de compression: 2.285x
+  Temps de compression: 2.568 ms
+  Temps de décompression: 2.002 ms
+  Temps d'accès aléatoire: 4.913 μs
+  Taille originale: 20000 octets
+  Taille compressée: 8752 octets
+  Seuil à 1 Mbps: 53.508 ms de latence
+  Seuil à 10 Mbps: 1032.119 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Aligned
+  Ratio de compression: 1.999x
+  Temps de compression: 1.042 ms
+  Temps de décompression: 0.866 ms
+  Temps d'accès aléatoire: 5.364 μs
+  Taille originale: 20000 octets
+  Taille compressée: 10004 octets
+  Seuil à 1 Mbps: 24.445 ms de latence
+  Seuil à 10 Mbps: 313.398 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+======================================================================
+
+Dataset: Avec Outliers
+--------------------------------------------------
+
+Algorithme: Overflow
+  Ratio de compression: 2.907x
+  Temps de compression: 2.716 ms
+  Temps de décompression: 2.291 ms
+  Temps d'accès aléatoire: 3.932 μs
+  Taille originale: 20000 octets
+  Taille compressée: 6880 octets
+  Seuil à 1 Mbps: 50.095 ms de latence
+  Seuil à 10 Mbps: 912.233 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Simple
+  Ratio de compression: 1.882x
+  Temps de compression: 2.327 ms
+  Temps de décompression: 2.249 ms
+  Temps d'accès aléatoire: 0.454 μs
+  Taille originale: 20000 octets
+  Taille compressée: 10628 octets
+  Seuil à 1 Mbps: 65.011 ms de latence
+  Seuil à 10 Mbps: 1566.885 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Aligned
+  Ratio de compression: 1.000x
+  Temps de compression: 0.970 ms
+  Temps de décompression: 0.817 ms
+  Temps d'accès aléatoire: 9.534 μs
+  Taille originale: 20000 octets
+  Taille compressée: 20004 octets
+  Seuil à 1 Mbps: Jamais bénéfique
+  Seuil à 10 Mbps: Jamais bénéfique
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+======================================================================
+
+Dataset: Séquentiel
+--------------------------------------------------
+
+Algorithme: Simple
+  Ratio de compression: 2.461x
+  Temps de compression: 2.395 ms
+  Temps de décompression: 2.155 ms
+  Temps d'accès aléatoire: 0.457 μs
+  Taille originale: 20000 octets
+  Taille compressée: 8128 octets
+  Seuil à 1 Mbps: 50.321 ms de latence
+  Seuil à 10 Mbps: 919.770 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Overflow
+  Ratio de compression: 2.461x
+  Temps de compression: 3.145 ms
+  Temps de décompression: 2.228 ms
+  Temps d'accès aléatoire: 4.627 μs
+  Taille originale: 20000 octets
+  Taille compressée: 8128 octets
+  Seuil à 1 Mbps: 59.965 ms de latence
+  Seuil à 10 Mbps: 1302.687 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Aligned
+  Ratio de compression: 1.999x
+  Temps de compression: 1.142 ms
+  Temps de décompression: 0.976 ms
+  Temps d'accès aléatoire: 5.372 μs
+  Taille originale: 20000 octets
+  Taille compressée: 10004 octets
+  Seuil à 1 Mbps: 27.201 ms de latence
+  Seuil à 10 Mbps: 360.189 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+======================================================================
+
+Dataset: Petites Valeurs
+--------------------------------------------------
+
+Algorithme: Simple
+  Ratio de compression: 8.000x
+  Temps de compression: 3.248 ms
+  Temps de décompression: 2.980 ms
+  Temps d'accès aléatoire: 0.335 μs
+  Taille originale: 40000 octets
+  Taille compressée: 5000 octets
+  Seuil à 1 Mbps: 22.751 ms de latence
+  Seuil à 10 Mbps: 286.093 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Overflow
+  Ratio de compression: 8.000x
+  Temps de compression: 4.356 ms
+  Temps de décompression: 2.947 ms
+  Temps d'accès aléatoire: 2.844 μs
+  Taille originale: 40000 octets
+  Taille compressée: 5000 octets
+  Seuil à 1 Mbps: 26.781 ms de latence
+  Seuil à 10 Mbps: 352.859 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+Algorithme: Aligned
+  Ratio de compression: 7.994x
+  Temps de compression: 2.050 ms
+  Temps de décompression: 1.840 ms
+  Temps d'accès aléatoire: 3.305 μs
+  Taille originale: 40000 octets
+  Taille compressée: 5004 octets
+  Seuil à 1 Mbps: 14.091 ms de latence
+  Seuil à 10 Mbps: 161.376 ms de latence
+  Seuil à 100 Mbps: Jamais bénéfique
+  Seuil à 1000 Mbps: Jamais bénéfique
+
+======================================================================

@@ -443,22 +443,8 @@ class CompressionWorker(QThread):
         """Run benchmark on data"""
         self.progress.emit("Running benchmarks...")
 
-        results = {}
-        for algorithm_index, comp_type in enumerate(CompressionType):
-            self.progress.emit(f"Testing {comp_type.value} algorithm...")
-
-            benchmark_suite = BenchmarkSuite(num_iterations=10)
-            algorithm = BitPackingFactory.create_compressor(comp_type)
-            result = benchmark_suite.benchmark_algorithm(algorithm, self.data, comp_type.value)
-
-            results[comp_type.value] = {
-                'compression_ratio': result.compression_ratio,
-                'compression_time': result.compression_time * 1000,  # Convert to ms
-                'decompression_time': result.decompression_time * 1000,
-                'access_time': result.get_time * 1000000,  # Convert to μs
-                'original_size': result.original_size_bits,
-                'compressed_size': result.compressed_size_bits
-            }
+        benchmark_suite = BenchmarkSuite(num_iterations=10)
+        results = benchmark_suite.benchmark_selective_algorithms(self.data)
 
         self.finished.emit({'benchmark_results': results})
 
@@ -606,7 +592,7 @@ class CompressionGUI(QMainWindow):
         input_layout.setSpacing(10)
 
         # Add info label
-        info_label = QLabel("💡 Enter positive integers separated by spaces")
+        info_label = QLabel("💡 Enter integers separated by spaces (supports negative numbers)")
         info_label.setObjectName("infoLabel")
         input_layout.addWidget(info_label)
 
@@ -712,7 +698,7 @@ class CompressionGUI(QMainWindow):
         self.algorithm_combo = QComboBox()
         self.algorithm_combo.setFixedHeight(40)
         for comp_type in CompressionType:
-            self.algorithm_combo.addItem(f"🔧 {comp_type.value.capitalize()}", comp_type.value)
+            self.algorithm_combo.addItem(f"��� {comp_type.value.capitalize()}", comp_type.value)
         algorithm_layout.addWidget(self.algorithm_combo)
 
         # Algorithm description
@@ -876,9 +862,6 @@ class CompressionGUI(QMainWindow):
                 QMessageBox.warning(self, "Warning", "No valid integers found")
                 return
 
-            if any(x < 0 for x in data):
-                QMessageBox.warning(self, "Warning", "Negative numbers are not supported")
-                return
 
             self.current_data = data
             self.update_data_display()
@@ -900,10 +883,6 @@ class CompressionGUI(QMainWindow):
             with open(file_path, 'r') as file:
                 content = file.read().strip()
                 data = [int(x) for x in content.split()]
-
-                if any(x < 0 for x in data):
-                    QMessageBox.warning(self, "Warning", "Negative numbers are not supported")
-                    return
 
                 self.current_data = data
                 self.update_data_display()
@@ -968,11 +947,23 @@ class CompressionGUI(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please load some data first")
             return
 
+        # Vérifier si les données contiennent des nombres négatifs
+        has_negatives = any(x < 0 for x in self.current_data)
+        algorithm = self.algorithm_combo.currentData()
+
+        if has_negatives and algorithm != "zigzag":
+            QMessageBox.warning(
+                self,
+                "⚠️ Negative Numbers Not Supported",
+                f"The '{algorithm.upper()}' algorithm does not support negative numbers.\n\n"
+                f"Please use the 'ZIGZAG' algorithm which is specifically designed to handle negative numbers.\n\n"
+                f"Current data contains negative values: {[x for x in self.current_data if x < 0]}"
+            )
+            return
+
         if not hasattr(self, 'compression_worker') or not self.compression_worker.isRunning():
             self.progress_bar.setVisible(True)
             self.progress_bar.setRange(0, 0)
-
-            algorithm = self.algorithm_combo.currentData()
 
             self.compression_worker = CompressionWorker(
                 'compress', self.current_data, algorithm
@@ -1017,12 +1008,24 @@ class CompressionGUI(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please load some data first")
             return
 
+        # Vérifier si les données contiennent des nombres négatifs
+        has_negatives = any(x < 0 for x in self.current_data)
+
+        if has_negatives:
+            QMessageBox.information(
+                self,
+                "ℹ️ Benchmark avec Données Négatives",
+                "Les données contiennent des nombres négatifs.\n\n"
+                "Seul l'algorithme ZIGZAG supportant les nombres négatifs sera testé.\n\n"
+                "Pour tester tous les algorithmes, veuillez utiliser des données positives uniquement."
+            )
+
         if not hasattr(self, 'benchmark_worker') or not self.benchmark_worker.isRunning():
             self.progress_bar.setVisible(True)
             self.progress_bar.setRange(0, 0)
 
             self.benchmark_worker = CompressionWorker(
-                'benchmark', self.current_data
+                'benchmark', self.current_data, has_negatives=has_negatives
             )
             self.benchmark_worker.finished.connect(self.on_benchmark_finished)
             self.benchmark_worker.progress.connect(self.update_status)

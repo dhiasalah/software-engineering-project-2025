@@ -9,7 +9,7 @@ la création et le changement d'algorithmes sans modifier le code client.
 
 from enum import Enum
 from typing import Union
-from bit_packing import BitPackingBase, SimpleBitPacking, AlignedBitPacking, OverflowBitPacking
+from bit_packing import BitPackingBase, SimpleBitPacking, AlignedBitPacking, OverflowBitPacking, ZigZagBitPacking
 
 
 class CompressionType(Enum):
@@ -17,6 +17,7 @@ class CompressionType(Enum):
     SIMPLE = "simple"
     ALIGNED = "aligned"
     OVERFLOW = "overflow"
+    ZIGZAG = "zigzag"
 
 
 class BitPackingFactory:
@@ -37,6 +38,7 @@ class BitPackingFactory:
                 - "simple" ou CompressionType.SIMPLE: Bit packing simple (permet le chevauchement)
                 - "aligned" ou CompressionType.ALIGNED: Bit packing aligné (pas de chevauchement)
                 - "overflow" ou CompressionType.OVERFLOW: Bit packing avec overflow (gestion des outliers)
+                - "zigzag" ou CompressionType.ZIGZAG: Bit packing avec ZigZag (données mixtes)
 
         Returns:
             BitPackingBase: Instance de l'algorithme de compression demandé
@@ -59,6 +61,8 @@ class BitPackingFactory:
             return AlignedBitPacking()
         elif compression_type == CompressionType.OVERFLOW:
             return OverflowBitPacking()
+        elif compression_type == CompressionType.ZIGZAG:
+            return ZigZagBitPacking()
         else:
             raise ValueError(f"Type de compression non supporté: {compression_type}")
 
@@ -90,17 +94,25 @@ class BitPackingFactory:
             CompressionType.SIMPLE:
                 "Bit packing simple qui permet aux entiers compressés de s'étendre sur "
                 "plusieurs entiers consécutifs dans le tableau de sortie. Le plus efficace "
-                "en termes d'espace mais les opérations de bits sont légèrement plus complexes.",
+                "en termes d'espace mais les opérations de bits sont légèrement plus complexes. "
+                "Pour les données positives uniquement.",
 
             CompressionType.ALIGNED:
                 "Bit packing aligné qui garantit que les entiers compressés ne s'étendent "
                 "jamais sur plusieurs entiers consécutifs. Accès plus rapide mais peut "
-                "utiliser plus d'espace à cause des contraintes d'alignement.",
+                "utiliser plus d'espace à cause des contraintes d'alignement. "
+                "Pour les données positives uniquement.",
 
             CompressionType.OVERFLOW:
                 "Bit packing avec overflow qui gère efficacement les outliers en stockant "
                 "les grandes valeurs dans une zone de débordement séparée. Optimal pour les "
-                "jeux de données avec principalement de petites valeurs et quelques grandes outliers."
+                "jeux de données avec principalement de petites valeurs et quelques grandes outliers. "
+                "Pour les données positives uniquement.",
+
+            CompressionType.ZIGZAG:
+                "Compression ZigZag qui encode les entiers en utilisant un motif en zigzag. "
+                "Seul algorithme supportant les nombres négatifs. Utile pour les données où les "
+                "valeurs positives et négatives sont également probables.",
         }
 
         return descriptions.get(compression_type, "Type de compression inconnu")

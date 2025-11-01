@@ -10,7 +10,7 @@ seuils de transmission optimaux où la compression devient avantageuse.
 import time
 import statistics
 import random
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple
 from dataclasses import dataclass
 from bit_packing import BitPackingBase
 from factory import BitPackingFactory, CompressionType
@@ -258,6 +258,49 @@ class BenchmarkSuite:
 
         # Retourner la latence où les bénéfices commencent
         return processing_overhead / (time_saved - processing_overhead) if time_saved > processing_overhead else 0
+
+    def benchmark_selective_algorithms(self, data: List[int]) -> Dict[str, Dict[str, float]]:
+        """
+        Benchmark les algorithmes de façon sélective selon le type de données.
+
+        - Si les données contiennent des nombres négatifs: teste uniquement ZigZag
+        - Si les données sont positives: teste tous les algorithmes (Simple, Aligned, Overflow, ZigZag)
+
+        Args:
+            data: Données à tester
+
+        Returns:
+            Dict: Dictionnaire avec résultats [algorithme] = métriques
+        """
+        has_negatives = any(x < 0 for x in data)
+        results = {}
+
+        if has_negatives:
+            # Pour les données négatives: uniquement ZigZag
+            algorithms_to_test = {
+                "zigzag": BitPackingFactory.create_compressor(CompressionType.ZIGZAG)
+            }
+        else:
+            # Pour les données positives: tous les algorithmes
+            algorithms_to_test = {
+                "simple": BitPackingFactory.create_compressor(CompressionType.SIMPLE),
+                "aligned": BitPackingFactory.create_compressor(CompressionType.ALIGNED),
+                "overflow": BitPackingFactory.create_compressor(CompressionType.OVERFLOW),
+                "zigzag": BitPackingFactory.create_compressor(CompressionType.ZIGZAG)
+            }
+
+        for algo_name, algorithm in algorithms_to_test.items():
+            result = self.benchmark_algorithm(algorithm, data, algo_name)
+            results[algo_name] = {
+                'compression_ratio': result.compression_ratio,
+                'compression_time': result.compression_time * 1000,  # Convert to ms
+                'decompression_time': result.decompression_time * 1000,
+                'access_time': result.get_time * 1000000,  # Convert to μs
+                'original_size': result.original_size_bits,
+                'compressed_size': result.compressed_size_bits
+            }
+
+        return results
 
     def generate_report(self, results: Dict[str, Dict[str, BenchmarkResult]]) -> str:
         """

@@ -109,20 +109,40 @@ def interactive_mode():
 
             print(f"\nTest avec les données: {data}")
 
-            # Demander le type de compression
-            print("Types de compression disponibles:")
-            for i, comp_type in enumerate(CompressionType, 1):
-                description = BitPackingFactory.get_description(comp_type)
-                print(f"{i}. {comp_type.value.capitalize()}: {description[:80]}...")
+            # Vérifier si les données contiennent des nombres négatifs
+            has_negatives = any(x < 0 for x in data)
 
-            choice = input("Choisissez le type de compression (1-3): ").strip()
+            # Afficher les algorithmes disponibles
+            print("Types de compression disponibles:")
+            available_types = []
+
+            if has_negatives:
+                # Pour les données négatives: uniquement ZigZag
+                print("⚠️ Les données contiennent des nombres négatifs!")
+                print("Seul l'algorithme ZIGZAG supporte les nombres négatifs.\n")
+                for comp_type in CompressionType:
+                    if comp_type == CompressionType.ZIGZAG:
+                        available_types.append(comp_type)
+                        description = BitPackingFactory.get_description(comp_type)
+                        print(f"1. {comp_type.value.capitalize()}: {description[:80]}...")
+            else:
+                # Pour les données positives: tous les algorithmes
+                for i, comp_type in enumerate(CompressionType, 1):
+                    available_types.append(comp_type)
+                    description = BitPackingFactory.get_description(comp_type)
+                    print(f"{i}. {comp_type.value.capitalize()}: {description[:80]}...")
+
+            choice = input("\nChoisissez le type de compression (1-{}): ".format(len(available_types))).strip()
 
             try:
-                comp_types = list(CompressionType)
-                comp_type = comp_types[int(choice) - 1]
+                comp_type = available_types[int(choice) - 1]
             except (ValueError, IndexError):
-                print("Choix invalide. Utilisation de la compression Simple.")
-                comp_type = CompressionType.SIMPLE
+                if has_negatives:
+                    print("Choix invalide. Utilisation de la compression ZigZag.")
+                    comp_type = CompressionType.ZIGZAG
+                else:
+                    print("Choix invalide. Utilisation de la compression Simple.")
+                    comp_type = CompressionType.SIMPLE
 
             # Tester l'algorithme choisi
             compressor = BitPackingFactory.create_compressor(comp_type)

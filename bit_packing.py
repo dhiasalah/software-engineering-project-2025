@@ -11,10 +11,9 @@ Chaque algorithme compresse les données en utilisant le nombre minimum de bits 
 pour représenter chaque valeur, réduisant ainsi la taille de transmission.
 """
 
-import time
 import math
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Optional
+from typing import List
 
 
 class BitPackingBase(ABC):
@@ -81,9 +80,19 @@ class BitPackingBase(ABC):
         """
         if not array:
             return 0
+
+        min_val = min(array)
         max_val = max(array)
+
+        # Si on a des nombres négatifs, on doit décaler toutes les valeurs
+        if min_val < 0:
+            # Décaler de sorte que la valeur minimale devient 0
+            range_val = max_val - min_val
+        else:
+            range_val = max_val
+
         # bit_length() retourne le nombre de bits nécessaires pour représenter le nombre
-        return max_val.bit_length() if max_val > 0 else 1
+        return range_val.bit_length() if range_val > 0 else 1
 
 
 class SimpleBitPacking(BitPackingBase):
@@ -262,13 +271,18 @@ class AlignedBitPacking(BitPackingBase):
     prochain entier. C'est plus simple et rapide mais peut gaspiller de l'espace.
     """
 
+    def __init__(self):
+        """Initialise le compresseur avec support des nombres négatifs"""
+        super().__init__()
+        self.min_value = 0  # Stocke la valeur minimale pour l'offset
+
     def compress(self, array: List[int]) -> List[int]:
         """
         Compresse le tableau en utilisant le bit packing aligné.
         Les entiers compressés ne s'étendent jamais sur plusieurs entiers de sortie.
 
         Args:
-            array: Tableau d'entiers positifs à compresser
+            array: Tableau d'entiers (positifs, négatifs, ou mixtes) à compresser
 
         Returns:
             List[int]: Tableau compressé avec alignement
@@ -277,7 +291,14 @@ class AlignedBitPacking(BitPackingBase):
             return []
 
         self.original_length = len(array)
-        self.bits_per_element = self._calculate_bits_needed(array)
+
+        # Calculer la valeur minimale pour l'offset
+        self.min_value = min(array)
+
+        # Appliquer le décalage pour tous les nombres
+        shifted_array = [value - self.min_value for value in array]
+
+        self.bits_per_element = self._calculate_bits_needed(shifted_array)
 
         # Calculer combien d'éléments peuvent tenir dans un entier 32-bit
         elements_per_int = 32 // self.bits_per_element if self.bits_per_element > 0 else 32
@@ -289,19 +310,21 @@ class AlignedBitPacking(BitPackingBase):
         compressed = [0] * num_output_ints
 
         # Empaqueter les éléments sans chevauchement
-        for i, value in enumerate(array):
+        for i, value in enumerate(shifted_array):
             output_index = i // elements_per_int  # Dans quel entier on écrit
             element_index = i % elements_per_int  # Position dans cet entier
             bit_offset = element_index * self.bits_per_element  # Offset en bits
 
             compressed[output_index] |= (value << bit_offset)
 
-        self.compressed_data = compressed
-        return compressed
+        # Stocker l'offset au début du tableau compressé
+        result = [self.min_value] + compressed
+        self.compressed_data = result
+        return result
 
     def decompress(self, compressed_array: List[int]) -> List[int]:
         """
-        Décompresse le tableau aligné.
+        Décompresse le tableau aligné en appliquant l'offset inverse.
 
         Args:
             compressed_array: Tableau compressé à décompresser
@@ -309,8 +332,12 @@ class AlignedBitPacking(BitPackingBase):
         Returns:
             List[int]: Tableau original reconstitué
         """
-        if not compressed_array:
+        if not compressed_array or len(compressed_array) < 2:
             return []
+
+        # Extraire l'offset du début du tableau
+        self.min_value = compressed_array[0]
+        actual_compressed = compressed_array[1:]
 
         result = []
         elements_per_int = 32 // self.bits_per_element if self.bits_per_element > 0 else 32
@@ -321,9 +348,10 @@ class AlignedBitPacking(BitPackingBase):
             element_index = i % elements_per_int
             bit_offset = element_index * self.bits_per_element
 
-            if output_index < len(compressed_array):
-                value = (compressed_array[output_index] >> bit_offset) & mask
-                result.append(value)
+            if output_index < len(actual_compressed):
+                value = (actual_compressed[output_index] >> bit_offset) & mask
+                # Appliquer l'offset inverse
+                result.append(value + self.min_value)
             else:
                 result.append(0)
 
@@ -352,8 +380,13 @@ class AlignedBitPacking(BitPackingBase):
         bit_offset = element_index * self.bits_per_element
         mask = (1 << self.bits_per_element) - 1
 
-        if output_index < len(self.compressed_data):
-            return (self.compressed_data[output_index] >> bit_offset) & mask
+        # Ignorer le premier élément qui contient l'offset
+        actual_compressed = self.compressed_data[1:]
+
+        if output_index < len(actual_compressed):
+            value = (actual_compressed[output_index] >> bit_offset) & mask
+            # Appliquer l'offset inverse
+            return value + self.min_value
         else:
             return 0
 
@@ -622,3 +655,85 @@ class OverflowBitPacking(BitPackingBase):
                 return first_part | (second_part << bits_in_first)
             else:
                 return first_part
+
+
+class ZigZagBitPacking(SimpleBitPacking):
+    """
+    Bit packing avec codage ZigZag pour gérer les entiers signés.
+
+    Le codage ZigZag permet de représenter les entiers signés de manière à ce que
+    les valeurs négatives aient également une petite représentation binaire.
+    Parfait pour les données où les valeurs positives et négatives sont également probables.
+
+    Exemple: [1, -1, 2, -2] pourrait être codé comme [2, 1, 3, 0] avec 2 bits par élément.
+    """
+
+    @staticmethod
+    def _zigzag_encode(value: int) -> int:
+        """Encode un entier signé en non-signé avec Zig-Zag."""
+        return (value << 1) ^ (value >> 31)
+
+    @staticmethod
+    def _zigzag_decode(value: int) -> int:
+        """Decode un entier non-signé en signé avec Zig-Zag inverse."""
+        return (value >> 1) ^ (-(value & 1))
+
+    def compress(self, array: List[int]) -> List[int]:
+        """
+        Compresse le tableau en utilisant le bit packing avec codage ZigZag.
+
+        Args:
+            array: Tableau d'entiers (positifs et négatifs) à compresser
+
+        Returns:
+            List[int]: Tableau compressé avec codage ZigZag
+        """
+        if not array:
+            return []
+
+        # Appliquer le codage ZigZag
+        zigzag_encoded = [self._zigzag_encode(value) for value in array]
+
+        # Utiliser le bit packing simple sur les données ZigZag codées
+        return super().compress(zigzag_encoded)
+
+    def decompress(self, compressed_array: List[int]) -> List[int]:
+        """
+        Décompresse le tableau en appliquant le décodage ZigZag inverse.
+
+        Args:
+            compressed_array: Tableau compressé à décompresser
+
+        Returns:
+            List[int]: Tableau original (avec signes restaurés)
+        """
+        if not compressed_array:
+            return []
+
+        # Utiliser le décompressage simple
+        zigzag_decoded = super().decompress(compressed_array)
+
+        # Appliquer le décodage ZigZag inverse
+        return [self._zigzag_decode(value) for value in zigzag_decoded]
+
+    def get(self, index: int) -> int:
+        """
+        Accès direct à un élément compressé avec codage ZigZag.
+
+        Args:
+            index: Index de l'élément (0-based)
+
+        Returns:
+            int: Valeur à cet index (avec signe)
+
+        Raises:
+            IndexError: Si index est hors limites
+        """
+        if index < 0 or index >= self.original_length:
+            raise IndexError("Index hors limites")
+
+        # Lire la valeur compressée via la classe parente
+        encoded_value = super().get(index)
+
+        # Appliquer le décodage ZigZag inverse
+        return self._zigzag_decode(encoded_value)
